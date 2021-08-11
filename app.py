@@ -12,20 +12,21 @@ from instaloader import Profile
 app = Flask(__name__)
 loader = instaloader.Instaloader()
 
-
 @app.route('/', methods=['GET'])
 def home():
     return render_template('home.html')
 
 
-@app.route('/app/', methods=['GET'])
+
+# API Version 1 Methods ----------------------
+@app.route('/api/v1/app/', methods=['GET'])
 def application():
     ipadd = request.args['ip']
     response = requests.get("https://geolocation-db.com/json/" + ipadd + "&position=true").json()
     return response, 200
 
 
-@app.route('/account/', methods=['GET', 'POST'])
+@app.route('/api/v1/account/', methods=['GET', 'POST'])
 def account() :
     username = request.args['q']
     token = request.args['token']
@@ -44,7 +45,7 @@ def account() :
     return {"logged_in": loader.test_login()}, 200
 
 
-@app.route('/account/test/', methods=['GET', 'POST'])
+@app.route('/api/v1/account/test/', methods=['GET', 'POST'])
 def check() :
     username = request.args['q']
     try:
@@ -55,7 +56,7 @@ def check() :
 
 
 
-@app.route('/profile/', methods=['GET'])
+@app.route('/api/v1//profile/', methods=['GET'])
 def getProfile():
     username = request.args['q']
     loader.load_session_from_file(username=username, filename='./sessions/' + username)
@@ -76,7 +77,7 @@ def getProfile():
         return jsonify({"message" : str(e)}, 404)
 
 
-@app.route('/profile/posts/', methods=['GET'])
+@app.route('/api/v1/profile/posts/', methods=['GET'])
 def getPosts():
     username = request.args['q']
     loader.load_session_from_file(username=username, filename='./sessions/' + username)
@@ -115,7 +116,7 @@ def getPosts():
 
 
 
-# DEPRERICATED ----------------------------------------------------------------------------------
+# DEPRERICATED Routes ----------------------------------------------------------------------------------
 
 # @app.route('/session/', methods=['POST'])
 # def setSession():
