@@ -19,18 +19,44 @@ def home():
 
 
 # API Version 1 Methods ----------------------
-@app.route('/api/v1/app/', methods=['GET'])
+@app.route('/api/v1/finder/', methods=['GET'])
 def application():
     ipadd = request.args['ip']
-    response = requests.get("https://geolocation-db.com/json/" + ipadd + "&position=true").json()
-    return response, 200
+    try:
+        response = requests.get("https://geolocation-db.com/json/" + ipadd + "&position=true").json()
+        return response, 200
+    except Exception as e :
+        return {'status': 'Could not connect to the server'}, 404
 
 
-@app.route('/api/v1/account/', methods=['GET', 'POST'])
-def account() :
+@app.route('/api/v1/session/', methods=['GET', 'POST'])
+def session() :
     username = request.args['q']
-    token = request.args['token']
-    cookieData = json.loads(request.data)
+    crftoken = request.args['token']
+    ds_user_id = request.args['id']
+    ig_cb = request.args['ig']
+    mid = request.args['mid']
+    sessionid = request.args['session']
+    ig_did = request.args['did']
+    shbid = request.args['bid']
+    shbts = request.args['bts']
+    rur = request.args['rur']
+
+    # Session object
+    session = {
+        'sessionid': sessionid, 
+        'mid': mid, 
+        'ig_pr': '1',
+        'ig_nrcb' : ig_cb,
+        'ig_vw': '1920', 
+        'csrftoken': crftoken,
+        's_network': '', 
+        'ds_user_id': ds_user_id,
+        'ig_did' : ig_did,
+        'shbid' : shbid,
+        'rur' : rur,
+        'shbts' : shbts
+    }
 
     filename = './sessions/' + username
     dirname = os.path.dirname(filename)
@@ -39,14 +65,15 @@ def account() :
             os.makedirs(dirname)
             
     with open(filename, 'wb') as sessionfile:
-        pickle.dump(cookieData, sessionfile)
-    
+        pickle.dump(session, sessionfile)
+        print("saved session file")
+
     loader.load_session_from_file(username=username, filename='./sessions/' + username)
     return {"logged_in": loader.test_login()}, 200
 
 
-@app.route('/api/v1/account/test/', methods=['GET', 'POST'])
-def check() :
+@app.route('/api/v1/session/check/', methods=['GET', 'POST'])
+def checkSession() :
     username = request.args['q']
     try:
         loader.load_session_from_file(username=username, filename='./sessions/' + username)
@@ -56,12 +83,16 @@ def check() :
 
 
 
-@app.route('/api/v1//profile/', methods=['GET'])
+@app.route('/api/v1/profile/', methods=['GET'])
 def getProfile():
     username = request.args['q']
-    loader.load_session_from_file(username=username, filename='./sessions/' + username)
+    try :
+        loader.load_session_from_file(username=username, filename='./sessions/' + username)
+    except FileNotFoundError:
+        return {'message' : "Relogin", 'status': 'Session Expired'}, 404
     try :
         profile = Profile.from_username(loader.context, username)
+
         prof = {
             "key" : profile.username,
             "name" : profile.full_name,
@@ -72,7 +103,8 @@ def getProfile():
             "private" : str(profile.is_private),
             "verified": str(profile.is_verified),
         }
-        return jsonify(prof)
+
+        return jsonify(prof), 200
     except Exception as e :
         return jsonify({"message" : str(e)}, 404)
 
